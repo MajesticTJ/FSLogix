@@ -13,7 +13,7 @@
 
     .PARAMETER Path
         Target path that hosts the FSLogix Profile Containers.
-    
+
     .PARAMETER Targets
         Path to an XML file that defines the Contianer profile paths to prune and delete
 
@@ -105,12 +105,12 @@ Function ConvertTo-Path {
 Function Convert-Size {
     <#
             .SYNOPSIS
-                Converts computer data sizes between one format and another. 
+                Converts computer data sizes between one format and another.
             .DESCRIPTION
                 This function handles conversion from any-to-any (e.g. Bits, Bytes, KB, KiB, MB,
                 MiB, etc.) It also has the ability to specify the precision of digits you want to
                 recieve as the output.
-        
+
                 International System of Units (SI) Binary and Standard
                 https://physics.nist.gov/cuu/Units/binary.html
                 https://en.wikipedia.org/wiki/Binary_prefix
@@ -122,17 +122,17 @@ Function Convert-Size {
             .EXAMPLE
                 Convert-Size -From KB -To GB -Value 1024
                 0.001
-        
+
                 Convert from Kilobyte to Gigabyte (Base 10)
             .EXAMPLE
                 Convert-Size -From GB -To GiB -Value 1024
                 953.6743
-        
+
                 Convert from Gigabyte (Base 10) to GibiByte (Base 2)
             .EXAMPLE
                 Convert-Size -From TB -To TiB -Value 1024 -Precision 2
                 931.32
-        
+
                 Convert from Terabyte (Base 10) to Tebibyte (Base 2) with only 2 digits after the decimal
         #>
     [OutputType([System.Double])]
@@ -140,11 +140,11 @@ Function Convert-Size {
         [ValidateSet("b", "B", "KB", "KiB", "MB", "MiB", "GB", "GiB", "TB", "TiB", "PB", "PiB", "EB", "EiB", "ZB", "ZiB", "YB", "YiB")]
         [Parameter(Mandatory = $true)]
         [System.String] $From,
-            
+
         [ValidateSet("b", "B", "KB", "KiB", "MB", "MiB", "GB", "GiB", "TB", "TiB", "PB", "PiB", "EB", "EiB", "ZB", "ZiB", "YB", "YiB")]
         [Parameter(Mandatory = $true)]
         [System.String] $To,
-            
+
         [Parameter(Mandatory = $true)]
         [System.Double] $Value,
 
@@ -270,12 +270,14 @@ If ($xmlDocument -is [System.XML.XMLDocument]) {
                 "[$($MyInvocation.MyCommand)][$(Get-Date -Format FileDateTime)] Delete mode" | Out-File -FilePath $LogFile -Append
             }
             Write-Verbose -Message "Writing file list to $LogFile."
-        
+
             # Output array, will contain the list of files/folders removed
             $fileList = New-Object -TypeName System.Collections.ArrayList
 
             # Mount the Container
-            $MountPath = Add-FslDriveLetter -Path $container.FullName -Passthru
+            Try { $MountPath = Add-FslDriveLetter -Path $container.FullName -Passthru }
+            Catch { Write-Verbose -Message "Container In Use, Skipping" ; continue }
+
             Write-Verbose -Message "Container mounted at: $MountPath."
 
             # Prune the container
@@ -286,7 +288,7 @@ If ($xmlDocument -is [System.XML.XMLDocument]) {
 
                     Write-Verbose -Message "Processing target: [$($target.Node.Name)]"
                     ForEach ($targetPath in $target.Node.Path) {
-            
+
                         # Convert path from XML with environment variable to actual path
                         $thisPath = Join-Path -Path $MountPath -ChildPath $(ConvertTo-Path -Path $targetPath.innerText)
                         Write-Verbose -Message "Processing folder: $thisPath"
@@ -375,7 +377,7 @@ If ($xmlDocument -is [System.XML.XMLDocument]) {
                                         }
                                     }
                                 }
-                    
+
                                 Default {
                                     Write-Warning -Message "[Unable to determine action for $thisPath]"
                                 }
